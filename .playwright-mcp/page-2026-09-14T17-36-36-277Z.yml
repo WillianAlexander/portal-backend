@@ -1,0 +1,91 @@
+- generic [ref=f8e105]:
+  - complementary [ref=f8e106]:
+    - img "SITH" [ref=f8e108]
+    - link "Módulos" [ref=f8e109] [cursor=pointer]:
+      - /url: /launcher
+    - navigation [ref=f8e119]:
+      - link "Inicio" [ref=f8e120] [cursor=pointer]:
+        - /url: /dashboard/talento-humano/inicio
+      - generic [ref=f8e126]: Talento Humano
+      - link "Vacaciones y permisos" [ref=f8e127] [cursor=pointer]:
+        - /url: /dashboard/talento-humano/vacaciones
+      - link "Viáticos y Movilización" [ref=f8e135] [cursor=pointer]:
+        - /url: /dashboard/talento-humano/viaticos
+      - link "Mis Solicitudes" [ref=f8e142] [cursor=pointer]:
+        - /url: /dashboard/talento-humano/mis-solicitudes
+      - link "Documentos" [ref=f8e146] [cursor=pointer]:
+        - /url: /dashboard/talento-humano/documentos
+  - main [ref=f8e152]:
+    - generic [ref=f8e153]:
+      - generic [ref=f8e155]:
+        - button "3" [ref=f8e156] [cursor=pointer]
+        - button [ref=f8e161] [cursor=pointer]
+        - generic [ref=f8e166] [cursor=pointer]:
+          - generic [ref=f8e167]: AM
+          - generic [ref=f8e168]: Ana
+      - generic [ref=f8e171]:
+        - heading "¡Hola, Ana! 👋" [level=1] [ref=f8e172]
+        - paragraph [ref=f8e173]: Bienvenido a tu espacio personal
+      - generic [ref=f8e174]:
+        - generic [ref=f8e175]:
+          - generic [ref=f8e176]:
+            - paragraph [ref=f8e177]: Vacaciones disponibles
+            - link "Ver más" [ref=f8e178] [cursor=pointer]:
+              - /url: /dashboard/vacaciones
+          - generic [ref=f8e179]:
+            - generic [ref=f8e180]: "14"
+            - generic [ref=f8e181]: días disponibles
+          - generic [ref=f8e182]: 14 de 21 días
+          - generic [ref=f8e187]:
+            - generic [ref=f8e188]: Próximo periodo aprobado
+            - generic [ref=f8e189]: 12 AGO 2026 – 19 AGO 2026 · 8 días
+        - generic [ref=f8e190]:
+          - generic [ref=f8e191]:
+            - heading "Notificaciones" [level=3] [ref=f8e192]
+            - link "Ver todas" [ref=f8e193] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=f8e194]:
+            - generic [ref=f8e201] [cursor=pointer]:
+              - generic [ref=f8e202]: Tu viaje a Logroño fue aprobado
+              - generic [ref=f8e203]: Que disfrutes tu viaje · Hoy, 09h00
+            - generic [ref=f8e210] [cursor=pointer]:
+              - generic [ref=f8e211]: Tienes 8 días de vacaciones pendientes
+              - generic [ref=f8e212]: Aprovecha tu saldo antes de fin de año · Ayer, 16h00
+            - generic [ref=f8e220] [cursor=pointer]:
+              - generic [ref=f8e221]: Actualiza tu información personal
+              - generic [ref=f8e222]: Revisa y actualiza tus datos · 27 Jul, 09h00
+        - generic [ref=f8e225]:
+          - heading "Accesos rápidos" [level=3] [ref=f8e226]
+          - generic [ref=f8e227]:
+            - link "Viáticos y Movilización" [ref=f8e228] [cursor=pointer]:
+              - /url: /dashboard/talento-humano/viaticos
+            - link "Vacaciones y permisos" [ref=f8e235] [cursor=pointer]:
+              - /url: /dashboard/talento-humano/vacaciones
+            - link "Mis Solicitudes" [ref=f8e243] [cursor=pointer]:
+              - /url: /dashboard/talento-humano/mis-solicitudes
+            - link "Documentos" [ref=f8e247] [cursor=pointer]:
+              - /url: /dashboard/talento-humano/documentos
+        - generic [ref=f8e252]:
+          - heading "Cumpleaños" [level=3] [ref=f8e253]
+          - generic [ref=f8e254]:
+            - generic [ref=f8e255]: MZ
+            - generic [ref=f8e256]:
+              - generic [ref=f8e257]: 🎂 Cumpleañero del mes
+              - generic [ref=f8e258]: Mateo Zumba
+              - generic [ref=f8e259]: Asistente de diseño y contenidos
+              - generic [ref=f8e260]: 13-08-2026 · Gualaquiza
+          - separator [ref=f8e261]
+          - paragraph [ref=f8e262]: Próximos cumpleaños
+          - generic [ref=f8e263]:
+            - generic [ref=f8e264]:
+              - generic [ref=f8e265]: CD
+              - generic [ref=f8e266]:
+                - generic [ref=f8e267]: Carlos Domínguez
+                - generic [ref=f8e268]: Analista de Marca
+              - generic [ref=f8e269]: Gualaquiza
+            - generic [ref=f8e270]:
+              - generic [ref=f8e271]: PT
+              - generic [ref=f8e272]:
+                - generic [ref=f8e273]: Patrik Torres
+                - generic [ref=f8e274]: Oficial de infraestructura física
+              - generic [ref=f8e275]: Cuenca

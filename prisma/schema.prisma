@@ -1,0 +1,667 @@
+// ============================================================
+// Motor de Procesos y Workflows — Multisistema
+// schema.prisma — PENDIENTE DE REVISIÓN (no ejecutar migrate todavía)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+/// Estado de registros de configuración
+enum EstadoConfig {
+  ACTIVO
+  INACTIVO
+}
+
+/// Estado de una instancia de proceso en ejecución
+enum EstadoInstancia {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  RECHAZADO
+  CANCELADO
+}
+
+/// Modo de ejecución de una acción
+enum TipoEjecucion {
+  MANUAL
+  AUTOMATICA
+}
+
+/// Tipo de entidad que figura como responsable de una acción
+enum TipoResponsable {
+  GRUPO
+  ROL
+  INDIVIDUO
+}
+
+/// Cómo se resuelve el responsable concreto en tiempo de ejecución
+enum TipoAsignacion {
+  ESTATICO
+  DINAMICO
+}
+
+/// Estado de una asignación concreta a un responsable
+enum EstadoAsignacion {
+  PENDIENTE
+  ATENDIDA
+  CANCELADA
+}
+
+/// Estado de una notificación
+enum EstadoNotificacion {
+  PENDIENTE
+  LEIDA
+  PROCESADA
+  CANCELADA
+}
+
+/// Canal de notificación
+enum TipoNotificacion {
+  INTERNA
+  EMAIL
+  PUSH
+}
+
+/// Clasificación de una operación HTTP expuesta
+enum TipoOperacion {
+  QUERY
+  COMMAND
+  WORKFLOW
+}
+
+/// Resultado de una ejecución de acción
+enum EstadoEjecucion {
+  EN_PROCESO
+  EXITOSA
+  FALLIDA
+}
+
+/// Rol de acceso del usuario en el sistema
+enum RolUsuario {
+  EMPLEADO
+  JEFE
+  RRHH
+  ADMIN
+}
+
+/// Estado de una solicitud de vacaciones (entidad de dominio)
+enum EstadoSolicitudVacaciones {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CERTIFICADO_GENERADO
+}
+
+/// Estado de una solicitud de anticipo de viáticos (entidad de dominio)
+enum EstadoSolicitudViaticos {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  ORDEN_GENERADA
+}
+
+/// Estado de una solicitud de permiso (entidad de dominio)
+enum EstadoSolicitudPermiso {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  FINALIZADA
+}
+
+// ============================================================
+// CONFIGURACIÓN
+// Regla: no mezclar configuración con ejecución.
+// La BD define QUÉ debe ocurrir; el código define CÓMO ocurre.
+// ============================================================
+
+/// Catálogo de módulos funcionales del sistema
+/// Ejemplos: TALENTO_HUMANO, CONTABILIDAD, TESORERIA
+model Tmodulo {
+  cmodulo             String       @id @db.VarChar(50)
+  descripcion         String       @db.VarChar(200)
+  estado              EstadoConfig @default(ACTIVO)
+  fechaInicio         DateTime?    @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?    @map("fecha_fin") @db.Date
+  usuarioCreacion     String       @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime     @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?      @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?    @map("fecha_modificacion")
+
+  procesos Tproceso[]
+
+  @@map("tmodulo")
+}
+
+/// Proceso funcional dentro de un módulo
+/// Ejemplos: VACACIONES, PERMISOS, CERTIFICADOS, CONTRATACION
+/// PK compuesta: (cmodulo, cproceso)
+model Tproceso {
+  cmodulo             String       @db.VarChar(50)
+  cproceso            String       @db.VarChar(50)
+  descripcion         String       @db.VarChar(200)
+  estado              EstadoConfig @default(ACTIVO)
+  fechaInicio         DateTime?    @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?    @map("fecha_fin") @db.Date
+  usuarioCreacion     String       @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime     @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?      @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?    @map("fecha_modificacion")
+
+  modulo Tmodulo  @relation(fields: [cmodulo], references: [cmodulo])
+  flujos Tflujo[]
+
+  @@id([cmodulo, cproceso])
+  @@map("tproceso")
+}
+
+/// Variante de ejecución de un proceso
+/// Ejemplo: VACACIONES → VACACIONES_NORMAL, VACACIONES_EMERGENCIA
+///
+/// INTEGRIDAD TFLUJO ↔ TPROCESOINSTANCIA:
+/// Se agrega @@unique([cflujo, cmodulo, cproceso]) para que Tprocesoinstancia pueda
+/// referenciar la tripleta completa (cflujo, cmodulo, cproceso) como FK compuesto.
+/// Esto garantiza a nivel de BD que ninguna instancia puede combinar un flujo con
+/// un módulo/proceso diferente al que ese flujo realmente pertenece.
+/// La relación directa Tproceso → Tprocesoinstancia fue eliminada para evitar
+/// FKs conflictivas; las instancias se consultan por (cmodulo, cproceso) vía índice.
+model Tflujo {
+  cflujo              String       @id @db.VarChar(50)
+  cmodulo             String       @db.VarChar(50)
+  cproceso            String       @db.VarChar(50)
+  descripcion         String       @db.VarChar(200)
+  /// Campo reservado — futura integración con grupos firmantes. No usar en Fase 1.
+  cgrupofirmante      String?      @db.VarChar(50)
+  estado              EstadoConfig @default(ACTIVO)
+  fechaInicio         DateTime?    @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?    @map("fecha_fin") @db.Date
+  usuarioCreacion     String       @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime     @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?      @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?    @map("fecha_modificacion")
+
+  proceso     Tproceso            @relation(fields: [cmodulo, cproceso], references: [cmodulo, cproceso])
+  fases       Tflujofases[]
+  instancias  Tprocesoinstancia[]
+  ejecuciones Taccionejecucion[]
+
+  @@unique([cflujo, cmodulo, cproceso])
+  @@map("tflujo")
+}
+
+/// Catálogo reutilizable de fases
+/// Una fase puede usarse en múltiples flujos y procesos
+/// Ejemplos: SOLICITUD, APROBACION, REVISION, FINALIZACION
+model Tfases {
+  cfase               String       @id @db.VarChar(50)
+  detalle             String       @db.VarChar(200)
+  estado              EstadoConfig @default(ACTIVO)
+  fechaInicio         DateTime?    @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?    @map("fecha_fin") @db.Date
+  usuarioCreacion     String       @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime     @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?      @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?    @map("fecha_modificacion")
+
+  flujos           Tflujofases[]
+  acciones         Tfaseaccion[]
+  instancias       Tprocesoinstancia[]
+  asignaciones     Tprocesoinstanciaresponsable[]
+  historialOrigen  Tprocesoinstanciahistorial[]   @relation("HistorialFaseOrigen")
+  historialDestino Tprocesoinstanciahistorial[]   @relation("HistorialFaseDestino")
+  ejecuciones      Taccionejecucion[]
+
+  @@map("tfases")
+}
+
+/// Relación ordenada entre un flujo y sus fases
+/// Define la secuencia de ejecución: orden 1 → 2 → 3 ...
+/// UNIQUE(cflujo, orden): impide dos fases con el mismo orden en un flujo
+model Tflujofases {
+  cflujo              String       @db.VarChar(50)
+  cfase               String       @db.VarChar(50)
+  orden               Int
+  estado              EstadoConfig @default(ACTIVO)
+  fechaInicio         DateTime?    @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?    @map("fecha_fin") @db.Date
+  usuarioCreacion     String       @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime     @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?      @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?    @map("fecha_modificacion")
+
+  flujo Tflujo @relation(fields: [cflujo], references: [cflujo])
+  fase  Tfases @relation(fields: [cfase], references: [cfase])
+
+  @@id([cflujo, cfase])
+  @@unique([cflujo, orden])
+  @@map("tflujofases")
+}
+
+/// Catálogo reutilizable de acciones
+/// Ejemplos: SOLICITAR_VACACIONES, APROBAR_VACACIONES, GENERAR_CERTIFICADO
+///
+/// REGLA tipoEjecucion:
+///   MANUAL     → requiere al menos un registro en Taccionresponsable; el motor crea
+///                asignaciones en Tprocesoinstanciaresponsable al entrar a la fase.
+///   AUTOMATICA → el motor ejecuta el ActionHandler directamente sin intervención humana;
+///                NO debe tener registros en Taccionresponsable.
+///                Ejemplo: GENERAR_CERTIFICADO se ejecuta automáticamente al entrar a FINALIZACION.
+model Taccion {
+  caccion             String        @id @db.VarChar(100)
+  descripcion         String        @db.VarChar(200)
+  /// Categoría funcional: SOLICITUD, APROBACION, RECHAZO, REGISTRO,
+  /// FIRMA, CONSULTA, NOTIFICACION, GENERACION, VALIDACION
+  tipoAccion          String        @map("tipo_accion") @db.VarChar(50)
+  tipoEjecucion       TipoEjecucion @default(MANUAL) @map("tipo_ejecucion")
+  estado              EstadoConfig  @default(ACTIVO)
+  fechaInicio         DateTime?     @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?     @map("fecha_fin") @db.Date
+  usuarioCreacion     String        @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime      @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?       @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?     @map("fecha_modificacion")
+
+  fases          Tfaseaccion[]
+  responsables   Taccionresponsable[]
+  operaciones    Toperacion[]
+  asignaciones   Tprocesoinstanciaresponsable[]
+  ejecuciones    Taccionejecucion[]
+  notificaciones Tnotificacion[]
+
+  @@map("taccion")
+}
+
+/// Acciones disponibles en una fase con su orden y comportamiento terminal
+///   esTerminal = false → el motor avanza a la siguiente fase según TFLUJOFASES.orden
+///   esTerminal = true  → la acción termina la instancia; estadoFinalInstancia define el estado final
+///   El motor NO infiere comportamiento terminal desde tipoAccion
+model Tfaseaccion {
+  cfase                String           @db.VarChar(50)
+  caccion              String           @db.VarChar(100)
+  orden                Int
+  obligatorio          Boolean          @default(false)
+  esTerminal           Boolean          @default(false) @map("es_terminal")
+  /// Requerido cuando esTerminal = true. Debe ser NULL cuando esTerminal = false.
+  /// Ejemplos: RECHAZADO, CANCELADO
+  estadoFinalInstancia EstadoInstancia? @map("estado_final_instancia")
+  estado               EstadoConfig     @default(ACTIVO)
+  fechaInicio          DateTime?        @map("fecha_inicio") @db.Date
+  fechaFin             DateTime?        @map("fecha_fin") @db.Date
+  usuarioCreacion      String           @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion        DateTime         @default(now()) @map("fecha_creacion")
+  usuarioModificacion  String?          @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion    DateTime?        @map("fecha_modificacion")
+
+  fase   Tfases  @relation(fields: [cfase], references: [cfase])
+  accion Taccion @relation(fields: [caccion], references: [caccion])
+
+  @@id([cfase, caccion])
+  @@map("tfaseaccion")
+}
+
+/// Configura quién puede ejecutar cada acción (solo aplica a acciones MANUAL)
+///
+/// tipoAsignacion = ESTATICO:
+///   GRUPO      → cgrupo = ID del grupo; cindividuo y codigoResolver son null
+///   ROL        → crol = código del rol; cindividuo y codigoResolver son null
+///   INDIVIDUO  → cindividuo = ID real del usuario; cgrupo, crol y codigoResolver son null
+///
+/// tipoAsignacion = DINAMICO:
+///   codigoResolver = código funcional (ej. 'JEFE_DEL_SOLICITANTE')
+///   El ResponsibleResolverRegistry resuelve el código al individuo concreto en runtime
+///   cindividuo, cgrupo y crol son null para asignaciones dinámicas
+model Taccionresponsable {
+  id                  Int             @id @default(autoincrement())
+  caccion             String          @db.VarChar(100)
+  ctipoResponsable    TipoResponsable @map("ctipo_responsable")
+  /// Solo para ESTATICO + GRUPO: ID del grupo responsable
+  cgrupo              String?         @db.VarChar(100)
+  /// Solo para ESTATICO + ROL: código del rol responsable
+  crol                String?         @db.VarChar(100)
+  /// Solo para ESTATICO + INDIVIDUO: ID real del usuario responsable
+  cindividuo          String?         @db.VarChar(100)
+  /// Solo para DINAMICO: código funcional resuelto por ResponsibleResolverRegistry
+  /// Ejemplo: 'JEFE_DEL_SOLICITANTE' → JefeDelSolicitanteResolver → usuario concreto
+  codigoResolver      String?         @map("codigo_resolver") @db.VarChar(100)
+  tipoAsignacion      TipoAsignacion  @default(ESTATICO) @map("tipo_asignacion")
+  prioridad           Int             @default(0)
+  estado              EstadoConfig    @default(ACTIVO)
+  fechaInicio         DateTime?       @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?       @map("fecha_fin") @db.Date
+  usuarioCreacion     String          @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime        @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?         @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?       @map("fecha_modificacion")
+
+  accion Taccion @relation(fields: [caccion], references: [caccion])
+
+  @@map("taccionresponsable")
+}
+
+/// Catálogo de operaciones HTTP de la aplicación
+/// Solo metadata y documentación: los endpoints reales se definen en código NestJS
+model Toperacion {
+  coperacion          String        @id @db.VarChar(100)
+  descripcion         String        @db.VarChar(200)
+  tipo                TipoOperacion
+  metodoHttp          String?       @map("metodo_http") @db.VarChar(10)
+  ruta                String?       @db.VarChar(200)
+  caccion             String?       @db.VarChar(100)
+  estado              EstadoConfig  @default(ACTIVO)
+  fechaInicio         DateTime?     @map("fecha_inicio") @db.Date
+  fechaFin            DateTime?     @map("fecha_fin") @db.Date
+  usuarioCreacion     String        @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime      @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?       @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?     @map("fecha_modificacion")
+
+  accion Taccion? @relation(fields: [caccion], references: [caccion])
+
+  @@map("toperacion")
+}
+
+// ============================================================
+// EJECUCIÓN
+// Regla: no mezclar con configuración.
+// Representa procesos reales ejecutándose.
+// ============================================================
+
+/// Instancia real de un proceso en ejecución
+///
+/// INTEGRIDAD flujo/proceso:
+///   El FK a Tflujo usa la tripleta (cflujo, cmodulo, cproceso), aprovechando el
+///   @@unique de Tflujo. Esto garantiza a nivel BD que cflujo pertenece al módulo
+///   y proceso indicados. La relación directa a Tproceso fue eliminada para evitar
+///   FKs conflictivas sobre los mismos campos. Las consultas por proceso se hacen
+///   mediante los índices sobre (cmodulo, cproceso).
+///
+/// cfaseActual: nunca se pone en NULL al terminar — conserva la última fase ejecutada.
+///   Ejemplos finales: RECHAZADO + APROBACION / COMPLETADO + FINALIZACION
+///
+/// version: optimistic locking — el motor incrementa este campo en cada cambio de estado.
+///   Si dos usuarios intentan actualizar simultáneamente, la segunda UPDATE fallará
+///   por versión desactualizada y se retornará 409 Conflict.
+model Tprocesoinstancia {
+  id                 Int             @id @default(autoincrement())
+  cmodulo            String          @db.VarChar(50)
+  cproceso           String          @db.VarChar(50)
+  cflujo             String          @db.VarChar(50)
+  cfaseActual        String          @map("cfase_actual") @db.VarChar(50)
+  estado             EstadoInstancia @default(PENDIENTE)
+  /// Tipo de entidad de negocio vinculada (ej. SOLICITUD_VACACIONES)
+  tipoEntidad        String?         @map("tipo_entidad") @db.VarChar(100)
+  /// ID de la entidad de negocio vinculada
+  idEntidad          String?         @map("id_entidad") @db.VarChar(100)
+  usuarioSolicitante String          @map("usuario_solicitante") @db.VarChar(100)
+  /// Versión para optimistic locking — se incrementa en cada cambio de estado
+  version            Int             @default(0)
+  fechaInicio        DateTime        @default(now()) @map("fecha_inicio")
+  /// Se establece al terminar la instancia (COMPLETADO, RECHAZADO, CANCELADO)
+  fechaFin           DateTime?       @map("fecha_fin")
+  fechaCreacion      DateTime        @default(now()) @map("fecha_creacion")
+  fechaModificacion  DateTime?       @map("fecha_modificacion")
+
+  flujo               Tflujo                         @relation(fields: [cflujo, cmodulo, cproceso], references: [cflujo, cmodulo, cproceso])
+  faseActual          Tfases                         @relation(fields: [cfaseActual], references: [cfase])
+  responsables        Tprocesoinstanciaresponsable[]
+  historial           Tprocesoinstanciahistorial[]
+  ejecuciones         Taccionejecucion[]
+  notificaciones      Tnotificacion[]
+  solicitudVacaciones Tsolicitudvacaciones?
+  solicitudViaticos   Tsolicitudviaticos?
+  solicitudPermisos   Tsolicitudpermisos?
+
+  @@index([usuarioSolicitante])
+  @@index([cmodulo, cproceso])
+  @@index([estado])
+  @@map("tprocesoinstancia")
+}
+
+/// Asignaciones concretas de responsables por acción y fase en una instancia
+///
+/// El motor crea estas asignaciones al entrar a cada fase (solo para acciones MANUAL).
+/// cfase se almacena explícitamente para auditoría histórica — permite reconstruir
+/// quién tenía asignada cada tarea en cada fase sin depender de joins con el historial.
+///
+/// Comportamiento first-wins (ANY):
+///   Cuando un responsable ejecuta correctamente la acción, su estado pasa a ATENDIDA
+///   y todas las demás asignaciones PENDIENTES de esa misma acción en esa instancia
+///   se CANCELAN de forma atómica para impedir doble procesamiento.
+///
+/// UNIQUE(idInstancia, cfase, caccion, cindividuo): impide asignar al mismo usuario
+///   dos veces a la misma acción en la misma fase/instancia.
+model Tprocesoinstanciaresponsable {
+  id               Int              @id @default(autoincrement())
+  idInstancia      Int              @map("id_instancia")
+  cfase            String           @db.VarChar(50)
+  caccion          String           @db.VarChar(100)
+  /// ID concreto del usuario asignado (ya resuelto por el motor en el momento de la asignación)
+  cindividuo       String           @db.VarChar(100)
+  estado           EstadoAsignacion @default(PENDIENTE)
+  fechaAsignacion  DateTime         @default(now()) @map("fecha_asignacion")
+  fechaAtencion    DateTime?        @map("fecha_atencion")
+  fechaVencimiento DateTime?        @map("fecha_vencimiento")
+
+  instancia Tprocesoinstancia @relation(fields: [idInstancia], references: [id])
+  fase      Tfases            @relation(fields: [cfase], references: [cfase])
+  accion    Taccion           @relation(fields: [caccion], references: [caccion])
+
+  @@unique([idInstancia, cfase, caccion, cindividuo])
+  @@index([cindividuo, estado])
+  @@index([idInstancia, cfase, caccion])
+  @@map("tprocesoinstanciaresponsable")
+}
+
+/// Historial de cambios de fase y estado de la instancia
+/// faseOrigen es nullable: la primera entrada (creación) no tiene fase previa
+model Tprocesoinstanciahistorial {
+  id            Int              @id @default(autoincrement())
+  idInstancia   Int              @map("id_instancia")
+  faseOrigen    String?          @map("fase_origen") @db.VarChar(50)
+  faseDestino   String           @map("fase_destino") @db.VarChar(50)
+  estadoOrigen  EstadoInstancia? @map("estado_origen")
+  estadoDestino EstadoInstancia  @map("estado_destino")
+  usuario       String           @db.VarChar(100)
+  fecha         DateTime         @default(now())
+  observacion   String?          @db.Text
+
+  instancia      Tprocesoinstancia @relation(fields: [idInstancia], references: [id])
+  faseOrigenRef  Tfases?           @relation("HistorialFaseOrigen", fields: [faseOrigen], references: [cfase])
+  faseDestinoRef Tfases            @relation("HistorialFaseDestino", fields: [faseDestino], references: [cfase])
+
+  @@index([idInstancia])
+  @@map("tprocesoinstanciahistorial")
+}
+
+/// Auditoría de cada ejecución de acción
+/// inputJson / outputJson: datos de entrada y salida del handler (JSONB en PostgreSQL)
+model Taccionejecucion {
+  id          Int             @id @default(autoincrement())
+  idInstancia Int             @map("id_instancia")
+  cflujo      String          @db.VarChar(50)
+  cfase       String          @db.VarChar(50)
+  caccion     String          @db.VarChar(100)
+  usuario     String          @db.VarChar(100)
+  fechaInicio DateTime        @default(now()) @map("fecha_inicio")
+  fechaFin    DateTime?       @map("fecha_fin")
+  estado      EstadoEjecucion @default(EN_PROCESO)
+  mensaje     String?         @db.Text
+  error       String?         @db.Text
+  inputJson   Json?           @map("input_json")
+  outputJson  Json?           @map("output_json")
+
+  instancia Tprocesoinstancia @relation(fields: [idInstancia], references: [id])
+  flujo     Tflujo            @relation(fields: [cflujo], references: [cflujo])
+  fase      Tfases            @relation(fields: [cfase], references: [cfase])
+  accion    Taccion           @relation(fields: [caccion], references: [caccion])
+
+  @@index([idInstancia])
+  @@index([usuario])
+  @@map("taccionejecucion")
+}
+
+/// Notificaciones generadas por el motor hacia los responsables
+/// Fase 1: solo tipo INTERNA. EMAIL y PUSH se integran en fases posteriores
+/// sin modificar el motor ni esta tabla.
+model Tnotificacion {
+  id            Int                @id @default(autoincrement())
+  idInstancia   Int                @map("id_instancia")
+  caccion       String?            @db.VarChar(100)
+  cindividuo    String             @db.VarChar(100)
+  tipo          TipoNotificacion   @default(INTERNA)
+  titulo        String             @db.VarChar(200)
+  mensaje       String             @db.Text
+  estado        EstadoNotificacion @default(PENDIENTE)
+  fechaCreacion DateTime           @default(now()) @map("fecha_creacion")
+  fechaLectura  DateTime?          @map("fecha_lectura")
+
+  instancia Tprocesoinstancia @relation(fields: [idInstancia], references: [id])
+  accion    Taccion?          @relation(fields: [caccion], references: [caccion])
+
+  @@index([cindividuo, estado])
+  @@index([idInstancia])
+  @@map("tnotificacion")
+}
+
+// ============================================================
+// DOMINIO — VACACIONES
+// Entidades de negocio específicas del proceso de vacaciones.
+// Separadas de las tablas de motor para cumplir la regla:
+// la BD define QUÉ se ejecuta; el dominio almacena el RESULTADO.
+// ============================================================
+
+/// Solicitud de vacaciones vinculada 1:1 a una instancia de workflow.
+/// @unique en idInstanciaWorkflow garantiza idempotencia del handler SOLICITAR_VACACIONES.
+model Tsolicitudvacaciones {
+  id                  Int                       @id @default(autoincrement())
+  /// FK a la instancia de workflow que gestiona esta solicitud
+  idInstanciaWorkflow Int                       @unique @map("id_instancia_workflow")
+  usuarioSolicitante  String                    @map("usuario_solicitante") @db.VarChar(100)
+  fechaInicioVac      DateTime                  @map("fecha_inicio_vac") @db.Date
+  fechaFinVac         DateTime                  @map("fecha_fin_vac") @db.Date
+  diasSolicitados     Int                       @map("dias_solicitados")
+  estado              EstadoSolicitudVacaciones @default(PENDIENTE)
+  motivoRechazo       String?                   @map("motivo_rechazo") @db.Text
+  usuarioAprobador    String?                   @map("usuario_aprobador") @db.VarChar(100)
+  fechaResolucion     DateTime?                 @map("fecha_resolucion")
+  /// Referencia al certificado generado (ej. ID de documento)
+  certificadoRef      String?                   @map("certificado_ref") @db.VarChar(200)
+  fechaCertificado    DateTime?                 @map("fecha_certificado")
+  usuarioCreacion     String                    @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime                  @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?                   @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?                 @map("fecha_modificacion")
+
+  instanciaWorkflow Tprocesoinstancia @relation(fields: [idInstanciaWorkflow], references: [id])
+
+  @@index([usuarioSolicitante])
+  @@map("tsolicitudvacaciones")
+}
+
+// ============================================================
+// DOMINIO — VIÁTICOS
+// ============================================================
+
+/// Solicitud de anticipo de viáticos vinculada 1:1 a una instancia de workflow.
+/// @unique en idInstanciaWorkflow garantiza idempotencia del handler SOLICITAR_ANTICIPO_VIA.
+model Tsolicitudviaticos {
+  id                  Int                      @id @default(autoincrement())
+  /// FK a la instancia de workflow que gestiona esta solicitud
+  idInstanciaWorkflow Int                      @unique @map("id_instancia_workflow")
+  usuarioSolicitante  String                   @map("usuario_solicitante") @db.VarChar(100)
+  destino             String                   @db.VarChar(200)
+  fechaInicioViaje    DateTime                 @map("fecha_inicio_viaje") @db.Date
+  fechaFinViaje       DateTime                 @map("fecha_fin_viaje") @db.Date
+  motivoViaje         String?                  @map("motivo_viaje") @db.VarChar(200)
+  montoAnticipo       Decimal                  @map("monto_anticipo") @db.Decimal(10, 2)
+  estado              EstadoSolicitudViaticos  @default(PENDIENTE)
+  motivoRechazo       String?                  @map("motivo_rechazo") @db.Text
+  usuarioAprobador    String?                  @map("usuario_aprobador") @db.VarChar(100)
+  fechaResolucion     DateTime?                @map("fecha_resolucion")
+  ordenPagoRef        String?                  @map("orden_pago_ref") @db.VarChar(200)
+  fechaOrdenPago      DateTime?                @map("fecha_orden_pago")
+  usuarioCreacion     String                   @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime                 @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?                  @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?                @map("fecha_modificacion")
+
+  instanciaWorkflow Tprocesoinstancia @relation(fields: [idInstanciaWorkflow], references: [id])
+
+  @@index([usuarioSolicitante])
+  @@map("tsolicitudviaticos")
+}
+
+// ============================================================
+// DOMINIO — PERMISOS
+// ============================================================
+
+/// Solicitud de permiso laboral vinculada 1:1 a una instancia de workflow.
+/// @unique en idInstanciaWorkflow garantiza idempotencia del handler SOLICITAR_PERMISO.
+model Tsolicitudpermisos {
+  id                  Int                    @id @default(autoincrement())
+  /// FK a la instancia de workflow que gestiona esta solicitud
+  idInstanciaWorkflow Int                    @unique @map("id_instancia_workflow")
+  usuarioSolicitante  String                 @map("usuario_solicitante") @db.VarChar(100)
+  tipoPermiso         String                 @map("tipo_permiso") @db.VarChar(100)
+  fechaInicio         DateTime               @map("fecha_inicio") @db.Date
+  fechaFin            DateTime               @map("fecha_fin") @db.Date
+  motivoPermiso       String?                @map("motivo_permiso") @db.VarChar(500)
+  estado              EstadoSolicitudPermiso @default(PENDIENTE)
+  motivoRechazo       String?                @map("motivo_rechazo") @db.Text
+  usuarioAprobador    String?                @map("usuario_aprobador") @db.VarChar(100)
+  fechaResolucion     DateTime?              @map("fecha_resolucion")
+  usuarioCreacion     String                 @map("usuario_creacion") @db.VarChar(100)
+  fechaCreacion       DateTime               @default(now()) @map("fecha_creacion")
+  usuarioModificacion String?                @map("usuario_modificacion") @db.VarChar(100)
+  fechaModificacion   DateTime?              @map("fecha_modificacion")
+
+  instanciaWorkflow Tprocesoinstancia @relation(fields: [idInstanciaWorkflow], references: [id])
+
+  @@index([usuarioSolicitante])
+  @@map("tsolicitudpermisos")
+}
+
+/// Mapeo empleado → jefe directo para el resolver JEFE_DEL_SOLICITANTE.
+/// Tabla mínima para la demo; en producción se integraría con el directorio RRHH.
+model Tjefeempleado {
+  cempleado String @id @db.VarChar(100)
+  cjefe     String @db.VarChar(100)
+
+  @@index([cjefe])
+  @@map("tjefeempleado")
+}
+
+// ============================================================
+// SEGURIDAD — USUARIOS
+// Tabla de credenciales locales para autenticación cedula + contraseña.
+// En producción podría delegarse a un IdP externo sin cambiar el motor.
+// ============================================================
+
+/// Credenciales de acceso al sistema.
+/// Autenticación exclusivamente vía Azure AD (azureOid).
+model Tusuario {
+  cempleado         String    @id @db.VarChar(100)
+  /// OID de Azure AD — identificador inmutable de la identidad corporativa
+  azureOid          String?   @unique @map("azure_oid") @db.VarChar(200)
+  cedula            String    @unique @db.VarChar(20)
+  nombre            String    @db.VarChar(200)
+  cargo             String?   @db.VarChar(100)
+  departamento      String?   @db.VarChar(100)
+  email             String?   @db.VarChar(200)
+  agencia           String?   @db.VarChar(100)
+  rol               RolUsuario @default(EMPLEADO)
+  activo            Boolean    @default(true)
+  fechaCreacion     DateTime   @default(now()) @map("fecha_creacion")
+  fechaModificacion DateTime?  @map("fecha_modificacion")
+
+  @@map("tusuario")
+}

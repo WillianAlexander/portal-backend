@@ -1,0 +1,31 @@
+- generic [ref=f12e4]:
+  - banner [ref=f12e5]:
+    - generic [ref=f12e6]: CoopHub
+    - generic [ref=f12e14]:
+      - generic [ref=f12e15]: Ana Martínez
+      - generic [ref=f12e16]: AM
+      - button "Cerrar sesión" [ref=f12e17] [cursor=pointer]
+  - main [ref=f12e21]:
+    - generic [ref=f12e22]:
+      - img "Cooperativa Gualaquiza" [ref=f12e23]
+      - heading "Elige un módulo" [level=1] [ref=f12e24]
+      - paragraph [ref=f12e25]: Selecciona el sistema al que deseas acceder
+    - generic [ref=f12e26]:
+      - button [ref=f12e27] [cursor=pointer]:
+        - img "Talento Humano" [ref=f12e28]
+        - generic [ref=f12e29]:
+          - heading "Talento Humano" [level=2] [ref=f12e30]
+          - paragraph [ref=f12e31]: Gestión de vacaciones, viáticos, solicitudes y documentos del personal.
+        - generic [ref=f12e32]: Ingresar
+      - button "Crédito y Cobranza Administración de créditos, cobranzas y cartera de socios. Próximamente" [disabled] [ref=f12e36]:
+        - generic [ref=f12e40]:
+          - heading "Crédito y Cobranza" [level=2] [ref=f12e41]
+          - paragraph [ref=f12e42]: Administración de créditos, cobranzas y cartera de socios.
+        - generic [ref=f12e43]: Próximamente
+      - button "Contabilidad Control contable, balances y reportes financieros. Próximamente" [disabled] [ref=f12e45]:
+        - generic [ref=f12e49]:
+          - heading "Contabilidad" [level=2] [ref=f12e50]
+          - paragraph [ref=f12e51]: Control contable, balances y reportes financieros.
+        - generic [ref=f12e52]: Próximamente
+  - contentinfo [ref=f12e54]:
+    - generic [ref=f12e55]: © 2026 Cooperativa Gualaquiza

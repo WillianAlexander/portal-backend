@@ -1,0 +1,32 @@
+- generic [ref=f5e4]:
+  - generic [ref=f5e5]:
+    - img "Cooperativa Gualaquiza" [ref=f5e6]
+    - button "Iniciar Sesión" [ref=f5e7] [cursor=pointer]
+    - generic [ref=f5e8]:
+      - paragraph [ref=f5e9]: Acceso de pruebas
+      - button "A Ana Martínez Analista" [ref=f5e10] [cursor=pointer]:
+        - generic [ref=f5e11]: A
+        - generic [ref=f5e12]:
+          - generic [ref=f5e13]: Ana Martínez
+          - generic [ref=f5e14]: Analista
+      - button "C Carlos López Auxiliar" [ref=f5e17] [cursor=pointer]:
+        - generic [ref=f5e18]: C
+        - generic [ref=f5e19]:
+          - generic [ref=f5e20]: Carlos López
+          - generic [ref=f5e21]: Auxiliar
+      - button "M María García Jefa de RR.HH." [ref=f5e24] [cursor=pointer]:
+        - generic [ref=f5e25]: M
+        - generic [ref=f5e26]:
+          - generic [ref=f5e27]: María García
+          - generic [ref=f5e28]: Jefa de RR.HH.
+      - button "P Pedro Soto Supervisor" [ref=f5e31] [cursor=pointer]:
+        - generic [ref=f5e32]: P
+        - generic [ref=f5e33]:
+          - generic [ref=f5e34]: Pedro Soto
+          - generic [ref=f5e35]: Supervisor
+      - button "L Luis Flores Técnico" [ref=f5e38] [cursor=pointer]:
+        - generic [ref=f5e39]: L
+        - generic [ref=f5e40]:
+          - generic [ref=f5e41]: Luis Flores
+          - generic [ref=f5e42]: Técnico
+  - contentinfo [ref=f5e45]: © 2026 Cooperativa Gualaquiza

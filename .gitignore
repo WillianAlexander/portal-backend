@@ -1,0 +1,21 @@
+node_modules/
+dist/
+
+# All .env files except the example
+.env
+.env.*
+!.env.example
+
+coverage/
+*.log
+.DS_Store
+
+# Certificates and private keys
+*.p12
+*.pem
+*.key
+*.pfx
+*.crt
+*.cer
+# Local Pi runtime state
+.atl/
